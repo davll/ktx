@@ -1,30 +1,30 @@
-# ktx
+# ktx-async
 
 [![crate-badge]][crate-link] [![docs-badge]][docs-link]
 
-[crate-badge]: https://img.shields.io/crates/v/ktx.svg
-[crate-link]: https://crates.io/crates/ktx
-[docs-badge]: https://docs.rs/ktx/badge.svg
-[docs-link]: https://docs.rs/ktx
+[crate-badge]: https://img.shields.io/crates/v/ktx-async.svg
+[crate-link]: https://crates.io/crates/ktx-async
+[docs-badge]: https://docs.rs/ktx-async/badge.svg
+[docs-link]: https://docs.rs/ktx-async
 
-KTX texture format reader written in Rust
+Asynchronous reader for KTX texture format
 
 Features:
 
-- Simple API
+- Asynchronous IO API
+- Works with [tokio](https://github.com/tokio-rs/tokio)
 - Supports KTX 1.1
-- Asynchronous (with [tokio][tokio])
-
-[tokio][https://github.com/tokio-rs/tokio]
 
 TODO:
 
-- Add `std::io::Read` support
-- Custom buffer allocation
+- Custom buffer allocation (ex: OpenGL Pixel Buffer Object)
+- Add `std::io::Read` support (?)
+- KTX 2.0 (?) [spec](http://github.khronos.org/KTX-Specification/)
 
 Example:
 
 ```rust
+use ktx_async as ktx;
 use tokio::fs::File;
 use tokio::stream::StreamExt as _;
 
@@ -57,19 +57,19 @@ while let Some((frame, buf)) = stream.next().await.map(|r| r.unwrap()) {
 
 ## Development
 
-### Build
+Build:
 
 ```
 cargo build
 ```
 
-### Run Test
+Run Test:
 
 ```
 cargo test
 ```
 
-### Run Example
+Run Example:
 
 ```
 cargo run --example basic
@@ -78,48 +78,6 @@ cargo run --example basic
 ## License
 
 This project is licensed under the [MIT License](LICENSE)
-
-## File Structure
-
-```
-Byte[12] identifier
-UInt32 endianness
-UInt32 glType
-UInt32 glTypeSize
-UInt32 glFormat
-Uint32 glInternalFormat
-Uint32 glBaseInternalFormat
-UInt32 pixelWidth
-UInt32 pixelHeight
-UInt32 pixelDepth
-UInt32 numberOfArrayElements
-UInt32 numberOfFaces
-UInt32 numberOfMipmapLevels
-UInt32 bytesOfKeyValueData
-
-for each keyValuePair that fits in bytesOfKeyValueData
-    UInt32   keyAndValueByteSize
-    Byte     keyAndValue[keyAndValueByteSize]
-    Byte     valuePadding[3 - ((keyAndValueByteSize + 3) % 4)]
-end
-
-for each mipmap_level in numberOfMipmapLevels*
-    UInt32 imageSize;
-    for each array_element in numberOfArrayElements*
-        for each face in numberOfFaces
-            for each z_slice in pixelDepth*
-                for each row or row_of_blocks in pixelHeight*
-                    for each pixel or block_of_pixels in pixelWidth
-                        Byte data[format-specific-number-of-bytes]**
-                    end
-                end
-            end
-            Byte cubePadding[0-3]
-        end
-    end
-    Byte mipPadding[3 - ((imageSize + 3) % 4)]
-end
-```
 
 ## References
 

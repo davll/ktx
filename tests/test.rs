@@ -1,6 +1,6 @@
 extern crate futures_core;
 extern crate gl;
-extern crate ktx;
+extern crate ktx_async as ktx;
 extern crate lazy_static;
 extern crate tokio;
 

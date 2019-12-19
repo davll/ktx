@@ -2,6 +2,48 @@
 //!
 //! https://www.khronos.org/opengles/sdk/tools/KTX/file_format_spec/
 
+/*
+File Structure:
+
+Byte[12] identifier
+UInt32 endianness
+UInt32 glType
+UInt32 glTypeSize
+UInt32 glFormat
+Uint32 glInternalFormat
+Uint32 glBaseInternalFormat
+UInt32 pixelWidth
+UInt32 pixelHeight
+UInt32 pixelDepth
+UInt32 numberOfArrayElements
+UInt32 numberOfFaces
+UInt32 numberOfMipmapLevels
+UInt32 bytesOfKeyValueData
+
+for each keyValuePair that fits in bytesOfKeyValueData
+    UInt32   keyAndValueByteSize
+    Byte     keyAndValue[keyAndValueByteSize]
+    Byte     valuePadding[3 - ((keyAndValueByteSize + 3) % 4)]
+end
+
+for each mipmap_level in numberOfMipmapLevels*
+    UInt32 imageSize;
+    for each array_element in numberOfArrayElements*
+        for each face in numberOfFaces
+            for each z_slice in pixelDepth*
+                for each row or row_of_blocks in pixelHeight*
+                    for each pixel or block_of_pixels in pixelWidth
+                        Byte data[format-specific-number-of-bytes]**
+                    end
+                end
+            end
+            Byte cubePadding[0-3]
+        end
+    end
+    Byte mipPadding[3 - ((imageSize + 3) % 4)]
+end
+*/
+
 // # imageSize
 //
 // For most textures `imageSize` is the number of bytes of
@@ -50,28 +92,16 @@
 
 #![recursion_limit = "256"]
 
+extern crate async_stream;
 extern crate byteorder;
 extern crate error_chain;
+extern crate futures_core;
 extern crate num_traits;
 extern crate num_derive;
-
-#[cfg(feature = "async-stream")]
-extern crate async_stream;
-
-#[cfg(feature = "futures-core")]
-extern crate futures_core;
-
-#[cfg(feature = "tokio")]
 pub extern crate tokio;
 
-
-
 use error_chain::{error_chain, bail};
-
-#[cfg(feature = "futures-core")]
 use futures_core::stream::Stream;
-
-#[cfg(feature = "tokio")]
 use tokio::io::{AsyncRead, AsyncReadExt as _};
 
 
@@ -86,7 +116,6 @@ impl<R> Decoder<R> {
     }
 }
 
-#[cfg(feature = "tokio")]
 impl<R> Decoder<R> where R: AsyncRead + Unpin {
     /// Read the header and the following frames asynchronously
     pub async fn read_async(self) -> Result<(HeaderInfo, impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin)> {
@@ -102,7 +131,6 @@ impl<R> Decoder<R> where R: AsyncRead + Unpin {
     }
 }
 
-#[cfg(feature = "tokio")]
 fn new_async_stream(read: impl AsyncRead + Unpin, info: &HeaderInfo) -> impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin {
     use async_stream::try_stream;
     use byteorder::{ByteOrder as _, NativeEndian as NE};
@@ -293,7 +321,6 @@ impl HeaderInfo {
     }
 }
 
-#[cfg(feature = "tokio")]
 async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderInfo> {
     use byteorder::{ByteOrder as _, NativeEndian as NE};
         

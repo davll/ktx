@@ -1,6 +1,6 @@
 extern crate gl;
 extern crate glutin;
-extern crate ktx;
+extern crate ktx_async as ktx;
 extern crate lazy_static;
 extern crate tokio;
 
