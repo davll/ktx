@@ -7,6 +7,7 @@ repository = "https://github.com/davll/ktx"
 license = "MIT"
 description = "Asynchronous reader for KTX texture format"
 readme = "README.md"
+exclude = ["data/**/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
