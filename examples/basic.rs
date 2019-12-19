@@ -1,10 +1,11 @@
+extern crate futures_util;
 extern crate gl;
 extern crate glutin;
 extern crate ktx_async as ktx;
 extern crate lazy_static;
 extern crate tokio;
 
-use tokio::stream::StreamExt as _;
+use futures_util::stream::StreamExt as _;
 use gl::types::*;
 use lazy_static::lazy_static;
 use std::path::Path;

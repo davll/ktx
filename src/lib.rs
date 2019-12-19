@@ -104,7 +104,6 @@ use error_chain::{error_chain, bail};
 use futures_core::stream::Stream;
 use tokio::io::{AsyncRead, AsyncReadExt as _};
 
-
 /// KTX decoder
 pub struct Decoder<R> {
     read: R,

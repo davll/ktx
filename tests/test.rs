@@ -1,4 +1,4 @@
-extern crate futures_core;
+extern crate futures_util;
 extern crate gl;
 extern crate ktx_async as ktx;
 extern crate lazy_static;
@@ -7,7 +7,7 @@ extern crate tokio;
 use ktx::Decoder;
 use lazy_static::lazy_static;
 use tokio::fs::File;
-use tokio::stream::StreamExt as _;
+use futures_util::stream::StreamExt as _;
 
 const GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT: u32 = 0x8A57;
 const GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: u32 = 0x83F3;
