@@ -98,7 +98,7 @@ extern crate error_chain;
 extern crate futures_core;
 extern crate num_traits;
 extern crate num_derive;
-pub extern crate tokio;
+extern crate tokio;
 
 use error_chain::{error_chain, bail};
 use futures_core::stream::Stream;
