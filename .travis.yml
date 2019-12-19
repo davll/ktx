@@ -1,8 +1,26 @@
 language: rust
+os: linux
 rust:
   - stable
   - beta
   - nightly
-matrix:
+script:
+  - cargo test
+jobs:
+  include:
+    - name: "rustfmt"
+      rust: stable
+      before_script:
+        - rustup component add rustfmt
+      script:
+        - cargo fmt --all -- --check
+    - name: "clippy"
+      rust: stable
+      before_script:
+        - rustup component add clippy
+      script:
+        - cargo clippy --all-targets --all-features -- -D warnings
   allow_failures:
     - rust: nightly
+    - name: "rustfmt"
+    - name: "clippy"
