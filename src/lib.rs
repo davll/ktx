@@ -91,6 +91,7 @@ end
 //
 
 #![recursion_limit = "256"]
+#![deny(unsafe_code)]
 
 extern crate async_stream;
 extern crate byteorder;
