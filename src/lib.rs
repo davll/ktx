@@ -43,7 +43,6 @@ for each mipmap_level in numberOfMipmapLevels*
     Byte mipPadding[3 - ((imageSize + 3) % 4)]
 end
 */
-
 // # imageSize
 //
 // For most textures `imageSize` is the number of bytes of
@@ -97,11 +96,11 @@ extern crate async_stream;
 extern crate byteorder;
 extern crate error_chain;
 extern crate futures_core;
-extern crate num_traits;
 extern crate num_derive;
+extern crate num_traits;
 extern crate tokio;
 
-use error_chain::{error_chain, bail};
+use error_chain::{bail, error_chain};
 use futures_core::stream::Stream;
 use tokio::io::{AsyncRead, AsyncReadExt as _};
 
@@ -116,9 +115,17 @@ impl<R> Decoder<R> {
     }
 }
 
-impl<R> Decoder<R> where R: AsyncRead + Unpin {
+impl<R> Decoder<R>
+where
+    R: AsyncRead + Unpin,
+{
     /// Read the header and the following frames asynchronously
-    pub async fn read_async(self) -> Result<(HeaderInfo, impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin)> {
+    pub async fn read_async(
+        self,
+    ) -> Result<(
+        HeaderInfo,
+        impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin,
+    )> {
         let mut read = self.read;
 
         // Read the header
@@ -131,7 +138,10 @@ impl<R> Decoder<R> where R: AsyncRead + Unpin {
     }
 }
 
-fn new_async_stream(read: impl AsyncRead + Unpin, info: &HeaderInfo) -> impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin {
+fn new_async_stream(
+    read: impl AsyncRead + Unpin,
+    info: &HeaderInfo,
+) -> impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin {
     use async_stream::try_stream;
     use byteorder::{ByteOrder as _, NativeEndian as NE};
     use std::cmp::max;
@@ -147,7 +157,7 @@ fn new_async_stream(read: impl AsyncRead + Unpin, info: &HeaderInfo) -> impl Str
     // Check if it is a non-array cubemap
     let is_cubemap = info.number_of_faces == 6 && info.number_of_array_elements == 0;
 
-    Box::pin(try_stream!{
+    Box::pin(try_stream! {
         let mut read = read;
         for level in 0..nlevels {
             let image_size = {
@@ -155,7 +165,7 @@ fn new_async_stream(read: impl AsyncRead + Unpin, info: &HeaderInfo) -> impl Str
                 read.read_exact(&mut buf).await?;
                 NE::read_u32(&buf)
             };
-            
+
             // FIXME: what if image_size is not 4-byte aligned?
             assert!(image_size % 4 == 0);
 
@@ -323,7 +333,7 @@ impl HeaderInfo {
 
 async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderInfo> {
     use byteorder::{ByteOrder as _, NativeEndian as NE};
-        
+
     let buf = {
         let mut v = [0_u8; 64];
         reader.read_exact(&mut v).await?;
@@ -355,7 +365,9 @@ async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderI
     let bytes_of_key_value_data = NE::read_u32(&buf[60..64]);
 
     if number_of_mipmap_levels == 0 {
-        bail!(ErrorKind::InvalidNumberOfMipmapLevels(number_of_mipmap_levels));
+        bail!(ErrorKind::InvalidNumberOfMipmapLevels(
+            number_of_mipmap_levels
+        ));
     }
 
     if (endianness == ENDIANNESS) && (bytes_of_key_value_data % 4 == 0) {
@@ -431,7 +443,8 @@ impl<'a> Iterator for Entries<'a> {
         let (kv, nextbuf) = resting.split_at(force_align(len) as usize);
         let (kv, _padding) = kv.split_at(len as usize);
         self.0 = nextbuf;
-        let nul_idx = kv.iter()
+        let nul_idx = kv
+            .iter()
             .enumerate()
             .filter(|(_, x)| **x == 0)
             .map(|(i, _)| i)

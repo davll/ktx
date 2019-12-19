@@ -18,9 +18,8 @@ async fn main() {
             .with_title("TestKTX: Basic")
             .with_inner_size(glutin::dpi::LogicalSize::new(1024.0, 768.0));
         let cb = glutin::ContextBuilder::new()
-            .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGlEs, (2,0)));
-        let ctx = cb.build_windowed(wb, &event_loop)
-            .unwrap();
+            .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGlEs, (2, 0)));
+        let ctx = cb.build_windowed(wb, &event_loop).unwrap();
         unsafe { ctx.make_current().unwrap() }
     };
 
@@ -38,31 +37,27 @@ async fn main() {
         }
         prog
     };
-    let position_attrib = unsafe {
-        gl::GetAttribLocation(program, b"position\0".as_ptr() as *const GLchar)
-    };
-    let texcoord_attrib = unsafe {
-        gl::GetAttribLocation(program, b"texcoord\0".as_ptr() as *const GLchar)
-    };
-    let tex_uniform = unsafe {
-        gl::GetUniformLocation(program, b"tex\0".as_ptr() as *const GLchar)
-    };
+    let position_attrib =
+        unsafe { gl::GetAttribLocation(program, b"position\0".as_ptr() as *const GLchar) };
+    let texcoord_attrib =
+        unsafe { gl::GetAttribLocation(program, b"texcoord\0".as_ptr() as *const GLchar) };
+    let tex_uniform =
+        unsafe { gl::GetUniformLocation(program, b"tex\0".as_ptr() as *const GLchar) };
 
     let vertex_buffer = {
         let data = &[
             /* vx, vy, tx, ty */
-            -0.5_f32, 0.5_f32, 0.0_f32, 0.0_f32,
-            -0.5_f32, -0.5_f32, 0.0_f32, 1.0_f32,
-            0.5_f32, 0.5_f32, 1.0_f32, 0.0_f32,
-            0.5_f32, -0.5_f32, 1.0_f32, 1.0_f32,
+            -0.5_f32, 0.5_f32, 0.0_f32, 0.0_f32, -0.5_f32, -0.5_f32, 0.0_f32, 1.0_f32, 0.5_f32,
+            0.5_f32, 1.0_f32, 0.0_f32, 0.5_f32, -0.5_f32, 1.0_f32, 1.0_f32,
         ];
-        
+
         let mut obj: GLuint = 0;
 
         unsafe {
             gl::GenBuffers(1, &mut obj);
             gl::BindBuffer(gl::ARRAY_BUFFER, obj);
-            gl::BufferData(gl::ARRAY_BUFFER,
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
                 (data.len() * 4) as GLsizeiptr,
                 data.as_ptr() as *const GLvoid,
                 gl::STATIC_DRAW,
@@ -88,7 +83,7 @@ async fn main() {
                 WindowEvent::Resized(logical_size) => {
                     let dpi_factor = glctx.window().hidpi_factor();
                     glctx.resize(logical_size.to_physical(dpi_factor));
-                },
+                }
                 WindowEvent::RedrawRequested => {
                     // Clear Render Target
                     unsafe {
@@ -140,11 +135,11 @@ async fn main() {
                         gl::Flush();
                     }
                     glctx.swap_buffers().unwrap();
-                },
+                }
                 WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                     return;
-                },
+                }
                 _ => return,
             },
             Event::LoopDestroyed => {
@@ -155,7 +150,7 @@ async fn main() {
                     gl::DeleteProgram(program);
                 }
                 return;
-            },
+            }
             _ => (),
         }
     });
@@ -269,7 +264,8 @@ async fn load_texture(path: impl AsRef<Path>) -> GLuint {
 
     while let Some((frame, buf)) = stream.next().await.map(|r| r.unwrap()) {
         unsafe {
-            gl::TexImage2D(gl::TEXTURE_2D,
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
                 frame.level as GLint,
                 info.gl_internal_format as GLint,
                 frame.pixel_width as GLsizei,
@@ -277,7 +273,8 @@ async fn load_texture(path: impl AsRef<Path>) -> GLuint {
                 /*border*/ 0,
                 info.gl_format as GLenum,
                 info.gl_type as GLenum,
-                buf.as_ptr() as *const GLvoid);
+                buf.as_ptr() as *const GLvoid,
+            );
         }
     }
 
@@ -288,6 +285,7 @@ lazy_static! {
     static ref PROJECT_DIR: std::path::PathBuf = {
         use std::env::var_os;
         var_os("CARGO_MANIFEST_DIR")
-            .map(|s| std::path::PathBuf::from(s)).unwrap()
+            .map(|s| std::path::PathBuf::from(s))
+            .unwrap()
     };
 }

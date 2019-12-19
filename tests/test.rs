@@ -4,10 +4,10 @@ extern crate ktx_async as ktx;
 extern crate lazy_static;
 extern crate tokio;
 
+use futures_util::stream::StreamExt as _;
 use ktx::Decoder;
 use lazy_static::lazy_static;
 use tokio::fs::File;
-use futures_util::stream::StreamExt as _;
 
 const GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT: u32 = 0x8A57;
 const GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: u32 = 0x83F3;
@@ -23,7 +23,7 @@ async fn test_rgb_reference() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, gl::UNSIGNED_BYTE);
     assert_eq!(info.gl_type_size, 1);
@@ -36,7 +36,7 @@ async fn test_rgb_reference() {
     assert_eq!(info.number_of_array_elements, 0);
     assert_eq!(info.number_of_faces, 1);
     assert_eq!(info.number_of_mipmap_levels, 1);
-    
+
     let (frame, buf) = stream.next().await.map(|r| r.unwrap()).unwrap();
     let expected_image_size = ((128 * 3 + 3) / 4) * 4 * 128;
     assert_eq!(frame.level, 0);
@@ -54,7 +54,7 @@ async fn test_rgb_mipmap_reference() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, gl::UNSIGNED_BYTE);
     assert_eq!(info.gl_type_size, 1);
@@ -67,7 +67,7 @@ async fn test_rgb_mipmap_reference() {
     assert_eq!(info.number_of_array_elements, 0);
     assert_eq!(info.number_of_faces, 1);
     assert_eq!(info.number_of_mipmap_levels, 7);
-    
+
     let mut level = 0;
     while let Some((frame, buf)) = stream.next().await.map(|r| r.unwrap()) {
         let width = info.pixel_width >> level;
@@ -91,7 +91,7 @@ async fn test_rgba_reference() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, gl::UNSIGNED_BYTE);
     assert_eq!(info.gl_type_size, 1);
@@ -104,7 +104,7 @@ async fn test_rgba_reference() {
     assert_eq!(info.number_of_array_elements, 0);
     assert_eq!(info.number_of_faces, 1);
     assert_eq!(info.number_of_mipmap_levels, 1);
-    
+
     let (frame, buf) = stream.next().await.map(|r| r.unwrap()).unwrap();
     let expected_image_size = ((128 * 4 + 3) / 4) * 4 * 128;
     assert_eq!(frame.level, 0);
@@ -122,7 +122,7 @@ async fn test_etc1() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, 0);
     assert_eq!(info.gl_type_size, 1);
@@ -135,7 +135,7 @@ async fn test_etc1() {
     assert_eq!(info.number_of_array_elements, 0);
     assert_eq!(info.number_of_faces, 1);
     assert_eq!(info.number_of_mipmap_levels, 1);
-    
+
     let (frame, buf) = stream.next().await.map(|r| r.unwrap()).unwrap();
     let expected_image_size = etc1_block_image_size(128, 128) as usize;
     assert_eq!(frame.level, 0);
@@ -153,7 +153,7 @@ async fn test_cubemap_etc2() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, 0);
     assert_eq!(info.gl_type_size, 1);
@@ -166,7 +166,7 @@ async fn test_cubemap_etc2() {
     assert_eq!(info.number_of_array_elements, 0);
     assert_eq!(info.number_of_faces, 6);
     assert_eq!(info.number_of_mipmap_levels, 1);
-    
+
     let mut face = 0;
     while let Some((frame, buf)) = stream.next().await.map(|r| r.unwrap()) {
         let expected_image_size = etc2_block_image_size(512, 512) as usize;
@@ -187,7 +187,7 @@ async fn test_cubemap_mipmap_reference() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, 0);
     assert_eq!(info.gl_type_size, 1);
@@ -200,7 +200,7 @@ async fn test_cubemap_mipmap_reference() {
     assert_eq!(info.number_of_array_elements, 0);
     assert_eq!(info.number_of_faces, 6);
     assert_eq!(info.number_of_mipmap_levels, 10);
-    
+
     for level in 0..10 {
         let width = 512 >> level;
         let height = 512 >> level;
@@ -223,12 +223,15 @@ async fn test_array_pvrtc() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, 0);
     assert_eq!(info.gl_type_size, 1);
     assert_eq!(info.gl_format, 0);
-    assert_eq!(info.gl_internal_format, GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT);
+    assert_eq!(
+        info.gl_internal_format,
+        GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT
+    );
     assert_eq!(info.gl_base_internal_format, gl::RGBA);
     assert_eq!(info.pixel_width, 256);
     assert_eq!(info.pixel_height, 256);
@@ -236,7 +239,7 @@ async fn test_array_pvrtc() {
     assert_eq!(info.number_of_array_elements, 7);
     assert_eq!(info.number_of_faces, 1);
     assert_eq!(info.number_of_mipmap_levels, 9);
-    
+
     for level in 0..9 {
         let width = 256 >> level;
         let height = 256 >> level;
@@ -260,7 +263,7 @@ async fn test_array_bc3_unorm() {
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
     let decoder = Decoder::new(file);
     let (info, mut stream) = decoder.read_async().await.unwrap();
-    
+
     //println!("info = {:?}", &info);
     assert_eq!(info.gl_type, 0);
     assert_eq!(info.gl_type_size, 1);
@@ -273,7 +276,7 @@ async fn test_array_bc3_unorm() {
     assert_eq!(info.number_of_array_elements, 7);
     assert_eq!(info.number_of_faces, 1);
     assert_eq!(info.number_of_mipmap_levels, 1);
-    
+
     let mut lyr = 0;
     while let Some((frame, buf)) = stream.next().await.map(|r| r.unwrap()) {
         let expected_image_size = bc3_block_image_size(256, 256) as usize;
@@ -292,14 +295,15 @@ lazy_static! {
     static ref PROJECT_DIR: std::path::PathBuf = {
         use std::env::var_os;
         var_os("CARGO_MANIFEST_DIR")
-            .map(|s| std::path::PathBuf::from(s)).unwrap()
+            .map(|s| std::path::PathBuf::from(s))
+            .unwrap()
     };
 }
 
 fn pvrtc4bppv1_block_image_size(w: u32, h: u32) -> u32 {
     use std::cmp::max;
 
-    (max(w,8) * max(h,8) * 4 + 7) / 8
+    (max(w, 8) * max(h, 8) * 4 + 7) / 8
 }
 
 fn bc3_block_image_size(w: u32, h: u32) -> u32 {
