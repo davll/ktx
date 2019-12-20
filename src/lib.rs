@@ -92,12 +92,6 @@ end
 #![recursion_limit = "256"]
 #![deny(unsafe_code)]
 
-extern crate async_stream;
-extern crate byteorder;
-extern crate error_chain;
-extern crate futures_core;
-extern crate tokio;
-
 use error_chain::{bail, error_chain};
 use futures_core::stream::Stream;
 use tokio::io::{AsyncRead, AsyncReadExt as _};

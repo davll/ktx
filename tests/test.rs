@@ -1,5 +1,4 @@
 extern crate futures_util;
-extern crate gl;
 extern crate ktx_async as ktx;
 extern crate lazy_static;
 extern crate tokio;
@@ -9,6 +8,11 @@ use ktx::Decoder;
 use lazy_static::lazy_static;
 use tokio::fs::File;
 
+const GL_UNSIGNED_BYTE: u32 = 0x1401;
+const GL_RGB: u32 = 0x1907;
+const GL_RGBA: u32 = 0x1908;
+const GL_RGB8: u32 = 0x8051;
+const GL_RGBA8: u32 = 0x8058;
 const GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT: u32 = 0x8A57;
 const GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: u32 = 0x83F3;
 const GL_COMPRESSED_RGB8_ETC2: u32 = 0x9274;
@@ -25,11 +29,11 @@ async fn test_rgb_reference() {
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
-    assert_eq!(info.gl_type, gl::UNSIGNED_BYTE);
+    assert_eq!(info.gl_type, GL_UNSIGNED_BYTE);
     assert_eq!(info.gl_type_size, 1);
-    assert_eq!(info.gl_format, gl::RGB);
-    assert_eq!(info.gl_internal_format, gl::RGB8);
-    assert_eq!(info.gl_base_internal_format, gl::RGB);
+    assert_eq!(info.gl_format, GL_RGB);
+    assert_eq!(info.gl_internal_format, GL_RGB8);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
     assert_eq!(info.pixel_width, 128);
     assert_eq!(info.pixel_height, 128);
     assert_eq!(info.pixel_depth, 0);
@@ -56,11 +60,11 @@ async fn test_rgb_mipmap_reference() {
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
-    assert_eq!(info.gl_type, gl::UNSIGNED_BYTE);
+    assert_eq!(info.gl_type, GL_UNSIGNED_BYTE);
     assert_eq!(info.gl_type_size, 1);
-    assert_eq!(info.gl_format, gl::RGB);
-    assert_eq!(info.gl_internal_format, gl::RGB8);
-    assert_eq!(info.gl_base_internal_format, gl::RGB);
+    assert_eq!(info.gl_format, GL_RGB);
+    assert_eq!(info.gl_internal_format, GL_RGB8);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
     assert_eq!(info.pixel_width, 64);
     assert_eq!(info.pixel_height, 64);
     assert_eq!(info.pixel_depth, 0);
@@ -93,11 +97,11 @@ async fn test_rgba_reference() {
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
-    assert_eq!(info.gl_type, gl::UNSIGNED_BYTE);
+    assert_eq!(info.gl_type, GL_UNSIGNED_BYTE);
     assert_eq!(info.gl_type_size, 1);
-    assert_eq!(info.gl_format, gl::RGBA);
-    assert_eq!(info.gl_internal_format, gl::RGBA8);
-    assert_eq!(info.gl_base_internal_format, gl::RGBA);
+    assert_eq!(info.gl_format, GL_RGBA);
+    assert_eq!(info.gl_internal_format, GL_RGBA8);
+    assert_eq!(info.gl_base_internal_format, GL_RGBA);
     assert_eq!(info.pixel_width, 128);
     assert_eq!(info.pixel_height, 128);
     assert_eq!(info.pixel_depth, 0);
@@ -128,7 +132,7 @@ async fn test_etc1() {
     assert_eq!(info.gl_type_size, 1);
     assert_eq!(info.gl_format, 0);
     assert_eq!(info.gl_internal_format, GL_ETC1_RGB8_OES);
-    assert_eq!(info.gl_base_internal_format, gl::RGB);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
     assert_eq!(info.pixel_width, 128);
     assert_eq!(info.pixel_height, 128);
     assert_eq!(info.pixel_depth, 0);
@@ -159,7 +163,7 @@ async fn test_cubemap_etc2() {
     assert_eq!(info.gl_type_size, 1);
     assert_eq!(info.gl_format, 0);
     assert_eq!(info.gl_internal_format, GL_COMPRESSED_RGB8_ETC2);
-    assert_eq!(info.gl_base_internal_format, gl::RGB);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
     assert_eq!(info.pixel_width, 512);
     assert_eq!(info.pixel_height, 512);
     assert_eq!(info.pixel_depth, 0);
@@ -193,7 +197,7 @@ async fn test_cubemap_mipmap_reference() {
     assert_eq!(info.gl_type_size, 1);
     assert_eq!(info.gl_format, 0);
     assert_eq!(info.gl_internal_format, GL_COMPRESSED_RGBA_ASTC_8x8_KHR);
-    assert_eq!(info.gl_base_internal_format, gl::RGBA);
+    assert_eq!(info.gl_base_internal_format, GL_RGBA);
     assert_eq!(info.pixel_width, 512);
     assert_eq!(info.pixel_height, 512);
     assert_eq!(info.pixel_depth, 0);
@@ -232,7 +236,7 @@ async fn test_array_pvrtc() {
         info.gl_internal_format,
         GL_COMPRESSED_SRGB_ALPHA_PVRTC_4BPPV1_EXT
     );
-    assert_eq!(info.gl_base_internal_format, gl::RGBA);
+    assert_eq!(info.gl_base_internal_format, GL_RGBA);
     assert_eq!(info.pixel_width, 256);
     assert_eq!(info.pixel_height, 256);
     assert_eq!(info.pixel_depth, 0);
@@ -269,7 +273,7 @@ async fn test_array_bc3_unorm() {
     assert_eq!(info.gl_type_size, 1);
     assert_eq!(info.gl_format, 0);
     assert_eq!(info.gl_internal_format, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);
-    assert_eq!(info.gl_base_internal_format, gl::RGBA);
+    assert_eq!(info.gl_base_internal_format, GL_RGBA);
     assert_eq!(info.pixel_width, 256);
     assert_eq!(info.pixel_height, 256);
     assert_eq!(info.pixel_depth, 0);

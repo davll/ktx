@@ -15,6 +15,9 @@ exclude = ["data/**/*"]
 repository = "davll/ktx"
 branch = "master"
 
+[features]
+default = []
+
 [dependencies]
 async-stream = { version = "0.2" }
 byteorder = "1.3"
