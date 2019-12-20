@@ -96,8 +96,6 @@ extern crate async_stream;
 extern crate byteorder;
 extern crate error_chain;
 extern crate futures_core;
-extern crate num_derive;
-extern crate num_traits;
 extern crate tokio;
 
 use error_chain::{bail, error_chain};
