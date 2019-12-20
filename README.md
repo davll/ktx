@@ -20,6 +20,7 @@ Features:
 
 TODO:
 
+- Skip mipmap levels
 - Custom buffer allocation (ex: OpenGL Pixel Buffer Object)
 - Add `std::io::Read` support (?)
 - KTX 2.0 (?) [spec](http://github.khronos.org/KTX-Specification/)

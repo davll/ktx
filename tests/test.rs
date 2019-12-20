@@ -93,6 +93,44 @@ async fn test_rgb_mipmap_reference() {
 }
 
 #[tokio::test]
+async fn test_rgb_mipmap_reference_skip_levels() {
+    let path = "data/khr/rgb-mipmap-reference.ktx";
+    let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader).skip_levels(3);
+    let (info, mut stream) = decoder.read_async().await.unwrap();
+
+    //println!("info = {:?}", &info);
+    assert_eq!(info.gl_type, GL_UNSIGNED_BYTE);
+    assert_eq!(info.gl_type_size, 1);
+    assert_eq!(info.gl_format, GL_RGB);
+    assert_eq!(info.gl_internal_format, GL_RGB8);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
+    assert_eq!(info.pixel_width, 64);
+    assert_eq!(info.pixel_height, 64);
+    assert_eq!(info.pixel_depth, 0);
+    assert_eq!(info.number_of_array_elements, 0);
+    assert_eq!(info.number_of_faces, 1);
+    assert_eq!(info.number_of_mipmap_levels, 7);
+
+    let mut level = 3;
+    while let Some((frame, buf)) = stream.next().await.map(|r| r.unwrap()) {
+        let width = info.pixel_width >> level;
+        let height = info.pixel_height >> level;
+        let expected_image_size = ((width * 3 + 3) / 4) * 4 * height;
+        assert_eq!(frame.level, level);
+        assert_eq!(frame.layer, 0);
+        assert_eq!(frame.face, 0);
+        assert_eq!(frame.pixel_width, width);
+        assert_eq!(frame.pixel_height, height);
+        assert_eq!(frame.pixel_depth, 1);
+        assert_eq!(buf.len(), expected_image_size as usize);
+        level += 1;
+    }
+    assert!(stream.next().await.is_none());
+}
+
+#[tokio::test]
 async fn test_rgba_reference() {
     let path = "data/khr/rgba-reference.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();

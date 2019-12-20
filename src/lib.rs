@@ -89,7 +89,7 @@ end
 // given in cubePadding and is retained for the same reason.
 //
 
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 #![deny(unsafe_code)]
 
 use error_chain::{bail, error_chain};
@@ -99,11 +99,22 @@ use tokio::io::{AsyncRead, AsyncReadExt as _};
 /// KTX decoder
 pub struct Decoder<R> {
     read: R,
+    skip_levels: u32,
 }
 
 impl<R> Decoder<R> {
     pub fn new(read: R) -> Self {
-        Decoder { read }
+        Decoder {
+            read,
+            skip_levels: 0,
+        }
+    }
+
+    pub fn skip_levels(self, skip_levels: u32) -> Self {
+        Decoder {
+            read: self.read,
+            skip_levels,
+        }
     }
 }
 
@@ -119,12 +130,13 @@ where
         impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin,
     )> {
         let mut read = self.read;
+        let skip_levels = self.skip_levels;
 
         // Read the header
         let info = read_header_async(&mut read).await?;
 
         // Create the stream of the frames
-        let stream = new_async_stream(read, &info);
+        let stream = new_async_stream(read, &info, skip_levels);
 
         Ok((info, stream))
     }
@@ -133,6 +145,7 @@ where
 fn new_async_stream(
     read: impl AsyncRead + Unpin,
     info: &HeaderInfo,
+    skip_levels: u32,
 ) -> impl Stream<Item = Result<(FrameInfo, Vec<u8>)>> + Unpin {
     use async_stream::try_stream;
     use byteorder::{ByteOrder as _, NativeEndian as NE};
@@ -178,6 +191,15 @@ fn new_async_stream(
             };
             assert!(face_size % 4 == 0);
             let buf_size = face_size as usize;
+
+            // Skip reading bytes if level < skip_levels
+            if level < skip_levels {
+                use tokio::io::{copy, sink};
+                let r = &mut read;
+                let nbytes = buf_size * (nlayers as usize) * (nfaces as usize);
+                copy(&mut r.take(nbytes as _), &mut sink()).await?;
+                continue;
+            }
 
             // Read pixels
             for layer in 0..nlayers {
