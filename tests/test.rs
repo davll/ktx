@@ -7,6 +7,7 @@ use futures_util::stream::StreamExt as _;
 use ktx::Decoder;
 use lazy_static::lazy_static;
 use tokio::fs::File;
+use tokio::io::BufReader;
 
 const GL_UNSIGNED_BYTE: u32 = 0x1401;
 const GL_RGB: u32 = 0x1907;
@@ -25,7 +26,8 @@ const GL_COMPRESSED_RGBA_ASTC_8x8_KHR: u32 = 0x93B7;
 async fn test_rgb_reference() {
     let path = "data/khr/rgb-reference.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -56,7 +58,8 @@ async fn test_rgb_reference() {
 async fn test_rgb_mipmap_reference() {
     let path = "data/khr/rgb-mipmap-reference.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -93,7 +96,8 @@ async fn test_rgb_mipmap_reference() {
 async fn test_rgba_reference() {
     let path = "data/khr/rgba-reference.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -124,7 +128,8 @@ async fn test_rgba_reference() {
 async fn test_etc1() {
     let path = "data/khr/etc1.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -155,7 +160,8 @@ async fn test_etc1() {
 async fn test_cubemap_etc2() {
     let path = "data/khr/cubemap_yokohama_etc2_unorm.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -189,7 +195,8 @@ async fn test_cubemap_etc2() {
 async fn test_cubemap_mipmap_reference() {
     let path = "data/khr/cubemap_yokohama_astc_8x8_unorm.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -225,7 +232,8 @@ async fn test_cubemap_mipmap_reference() {
 async fn test_array_pvrtc() {
     let path = "data/pvr/array-pvrtc-mipmap.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
@@ -265,7 +273,8 @@ async fn test_array_pvrtc() {
 async fn test_array_bc3_unorm() {
     let path = "data/khr/texturearray_bc3_unorm.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
-    let decoder = Decoder::new(file);
+    let reader = BufReader::new(file);
+    let decoder = Decoder::new(reader);
     let (info, mut stream) = decoder.read_async().await.unwrap();
 
     //println!("info = {:?}", &info);
