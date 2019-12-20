@@ -67,7 +67,7 @@ async fn main() {
         obj
     };
 
-    let texture = load_texture("data/pvr/block6.ktx").await;
+    let texture = load_texture("../../data/pvr/block6.ktx").await;
 
     event_loop.run(move |event, _target, control_flow| {
         use glutin::event::{Event, WindowEvent};

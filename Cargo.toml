@@ -1,4 +1,7 @@
 [workspace]
+members = [
+    "demos/basic",
+]
 
 [package]
 name = "ktx-async"
@@ -9,7 +12,7 @@ repository = "https://github.com/davll/ktx"
 license = "MIT"
 description = "Asynchronous reader for KTX texture format"
 readme = "README.md"
-exclude = ["data/**/*"]
+exclude = ["data/**/*", "demos/**/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -29,7 +32,5 @@ tokio = { version = "0.2.3", features = ["io-util"] }
 
 [dev-dependencies]
 futures-util = { version = "0.3" }
-gl = "0.14"
-glutin = "0.22.0-alpha5"
 lazy_static = "1.4"
 tokio = { version = "0.2.3", features = ["full"] }
