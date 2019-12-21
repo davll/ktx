@@ -5,7 +5,7 @@ name = "ktx-async"
 version = "0.1.1"
 authors = ["David Lin <davll.xc@gmail.com>"]
 edition = "2018"
-repository = "https://github.com/davll/ktx"
+repository = "https://github.com/davll/ktx-async"
 license = "MIT"
 description = "Asynchronous reader for KTX texture format"
 readme = "README.md"
@@ -14,7 +14,7 @@ exclude = ["data/**/*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [badges.travis-ci]
-repository = "davll/ktx"
+repository = "davll/ktx-async"
 branch = "master"
 
 [features]
