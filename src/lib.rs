@@ -154,7 +154,10 @@ fn new_async_stream(
         for level in 0..nlevels {
             let image_size = {
                 let mut buf = [0_u8; 4];
-                read.read_exact(&mut buf).await?;
+                let nread = read.read_exact(&mut buf).await?;
+                if nread != 4 {
+                    Err(ErrorKind::EndOfFile)?;
+                }
                 NE::read_u32(&buf)
             };
 
@@ -183,7 +186,10 @@ fn new_async_stream(
             for layer in 0..nlayers {
                 for face in 0..nfaces {
                     let mut buf = vec![0_u8; buf_size];
-                    read.read_exact(&mut buf).await?;
+                    let nread = read.read_exact(&mut buf).await?;
+                    if nread != buf_size {
+                        Err(ErrorKind::EndOfFile)?;
+                    }
                     let frame_info = FrameInfo {
                         level,
                         layer,
@@ -328,7 +334,10 @@ async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderI
 
     let buf = {
         let mut v = [0_u8; 64];
-        reader.read_exact(&mut v).await?;
+        let nread = reader.read_exact(&mut v).await?;
+        if nread != 64 {
+            bail!(ErrorKind::EndOfFile);
+        }
         v
     };
 
@@ -355,6 +364,7 @@ async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderI
     let number_of_faces = NE::read_u32(&buf[52..56]);
     let number_of_mipmap_levels = NE::read_u32(&buf[56..60]);
     let bytes_of_key_value_data = NE::read_u32(&buf[60..64]);
+    let bytes_of_key_value_data = force_align(bytes_of_key_value_data);
 
     if number_of_mipmap_levels == 0 {
         bail!(ErrorKind::InvalidNumberOfMipmapLevels(
@@ -362,27 +372,31 @@ async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderI
         ));
     }
 
-    if (endianness == ENDIANNESS) && (bytes_of_key_value_data % 4 == 0) {
-        let mut kvbuf = vec![0; bytes_of_key_value_data as usize];
-        reader.read_exact(&mut kvbuf).await?;
-        let info = HeaderInfo {
-            gl_type,
-            gl_type_size,
-            gl_format,
-            gl_internal_format,
-            gl_base_internal_format,
-            pixel_width,
-            pixel_height,
-            pixel_depth,
-            number_of_array_elements,
-            number_of_faces,
-            number_of_mipmap_levels,
-            key_value_data: KeyValueData { raw: kvbuf },
-        };
-        Ok(info)
-    } else {
+    if endianness != ENDIANNESS {
         bail!(ErrorKind::MismatchedEndianness(ENDIANNESS, endianness));
     }
+
+    let mut kvbuf = vec![0; bytes_of_key_value_data as usize];
+    let nread = reader.read_exact(&mut kvbuf).await?;
+    if nread != bytes_of_key_value_data as _ {
+        bail!(ErrorKind::EndOfFile);
+    }
+
+    let info = HeaderInfo {
+        gl_type,
+        gl_type_size,
+        gl_format,
+        gl_internal_format,
+        gl_base_internal_format,
+        pixel_width,
+        pixel_height,
+        pixel_depth,
+        number_of_array_elements,
+        number_of_faces,
+        number_of_mipmap_levels,
+        key_value_data: KeyValueData { raw: kvbuf },
+    };
+    Ok(info)
 }
 
 error_chain! {
@@ -398,6 +412,8 @@ error_chain! {
         MismatchedEndianness(expect: u32, actual: u32) {
         }
         InvalidNumberOfMipmapLevels(v: u32) {
+        }
+        EndOfFile {
         }
     }
 }
