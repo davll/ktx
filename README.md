@@ -1,6 +1,9 @@
 # ktx-async
 
-[![crate-badge]][crate-link] [![docs-badge]][docs-link] [![ci-status]][ci-link]
+[![crate-badge]][crate-link]
+[![docs-badge]][docs-link]
+[![ci-status]][ci-link]
+[![deps-status]][deps-link]
 
 [crate-badge]: https://img.shields.io/crates/v/ktx-async.svg
 [crate-link]: https://crates.io/crates/ktx-async
@@ -8,7 +11,8 @@
 [docs-link]: https://docs.rs/ktx-async
 [ci-status]: https://travis-ci.com/davll/ktx.svg?branch=master
 [ci-link]: https://travis-ci.com/davll/ktx
-
+[deps-status]: https://deps.rs/repo/github/davll/ktx-async/status.svg
+[deps-link]: https://deps.rs/repo/github/davll/ktx-async
 
 Asynchronous reader for KTX texture format
 

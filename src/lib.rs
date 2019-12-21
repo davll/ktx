@@ -155,9 +155,7 @@ fn new_async_stream(
             let image_size = {
                 let mut buf = [0_u8; 4];
                 let nread = read.read_exact(&mut buf).await?;
-                if nread != 4 {
-                    Err(ErrorKind::EndOfFile)?;
-                }
+                assert_eq!(nread, 4);
                 NE::read_u32(&buf)
             };
 
@@ -187,9 +185,7 @@ fn new_async_stream(
                 for face in 0..nfaces {
                     let mut buf = vec![0_u8; buf_size];
                     let nread = read.read_exact(&mut buf).await?;
-                    if nread != buf_size {
-                        Err(ErrorKind::EndOfFile)?;
-                    }
+                    assert_eq!(nread, buf_size);
                     let frame_info = FrameInfo {
                         level,
                         layer,
@@ -335,9 +331,7 @@ async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderI
     let buf = {
         let mut v = [0_u8; 64];
         let nread = reader.read_exact(&mut v).await?;
-        if nread != 64 {
-            bail!(ErrorKind::EndOfFile);
-        }
+        assert_eq!(nread, 64);
         v
     };
 
@@ -378,9 +372,7 @@ async fn read_header_async(mut reader: impl AsyncRead + Unpin) -> Result<HeaderI
 
     let mut kvbuf = vec![0; bytes_of_key_value_data as usize];
     let nread = reader.read_exact(&mut kvbuf).await?;
-    if nread != bytes_of_key_value_data as _ {
-        bail!(ErrorKind::EndOfFile);
-    }
+    assert_eq!(nread, bytes_of_key_value_data as _);
 
     let info = HeaderInfo {
         gl_type,
@@ -412,8 +404,6 @@ error_chain! {
         MismatchedEndianness(expect: u32, actual: u32) {
         }
         InvalidNumberOfMipmapLevels(v: u32) {
-        }
-        EndOfFile {
         }
     }
 }
