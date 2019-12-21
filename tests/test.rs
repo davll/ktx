@@ -336,25 +336,26 @@ fn etc1_block_image_size(w: u32, h: u32) -> u32 {
     (8 * bw * bh)
 }
 
-pub struct StreamRead<S> {
+pub struct StreamRead<S, B> {
     stream: S,
-    buf: Vec<u8>,
+    buf: Option<B>,
     pos: usize,
 }
 
-impl<S> StreamRead<S> {
+impl<S, B> StreamRead<S, B> {
     pub fn new(stream: S) -> Self {
         StreamRead {
             stream,
-            buf: vec![],
+            buf: None,
             pos: 0,
         }
     }
 }
 
-impl<S> tokio::io::AsyncRead for StreamRead<S>
+impl<S, B> tokio::io::AsyncRead for StreamRead<S, B>
 where
-    S: Stream<Item = std::io::Result<Vec<u8>>> + Unpin,
+    S: Stream<Item = std::io::Result<B>> + Unpin,
+    B: AsRef<[u8]> + Unpin,
 {
     fn poll_read(
         self: std::pin::Pin<&mut Self>,
@@ -376,11 +377,11 @@ where
         }
 
         // Fetch Data
-        if curr_buf.is_empty() || *curr_pos == curr_buf.len() {
+        if *curr_pos == curr_buf.as_ref().map(|r| r.as_ref()).unwrap_or(&[]).len() {
             match stream.poll_next(cx) {
                 Poll::Ready(Some(result)) => match result {
                     Ok(buf) => {
-                        *curr_buf = buf;
+                        *curr_buf = Some(buf);
                         *curr_pos = 0;
                     }
                     Err(e) => return Poll::Ready(Err(e)),
@@ -390,6 +391,7 @@ where
             }
         }
 
+        let curr_buf = curr_buf.as_ref().map(|r| r.as_ref()).unwrap_or(&[]);
         let max_count = curr_buf.len() - *curr_pos;
         let count = min(buf.len(), max_count);
         let start = *curr_pos;
@@ -413,6 +415,69 @@ async fn test_rgb_reference_from_stream() {
     reader.read_to_end(&mut buf).await.unwrap();
 
     let stream = futures_util::stream::iter(buf.chunks(128).map(|x| Ok(Vec::from(x))));
+    let reader = StreamRead::new(stream);
+
+    let decoder = Decoder::new(reader);
+    let (info, mut stream) = decoder.read_async().await.unwrap();
+
+    //println!("info = {:?}", &info);
+    assert_eq!(info.gl_type, GL_UNSIGNED_BYTE);
+    assert_eq!(info.gl_type_size, 1);
+    assert_eq!(info.gl_format, GL_RGB);
+    assert_eq!(info.gl_internal_format, GL_RGB8);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
+    assert_eq!(info.pixel_width, 128);
+    assert_eq!(info.pixel_height, 128);
+    assert_eq!(info.pixel_depth, 0);
+    assert_eq!(info.number_of_array_elements, 0);
+    assert_eq!(info.number_of_faces, 1);
+    assert_eq!(info.number_of_mipmap_levels, 1);
+
+    let (frame, buf) = stream.next().await.map(|r| r.unwrap()).unwrap();
+    let expected_image_size = ((128 * 3 + 3) / 4) * 4 * 128;
+    assert_eq!(frame.level, 0);
+    assert_eq!(frame.layer, 0);
+    assert_eq!(frame.face, 0);
+    assert_eq!(frame.pixel_width, 128);
+    assert_eq!(frame.pixel_height, 128);
+    assert_eq!(frame.pixel_depth, 1);
+    assert_eq!(buf.len(), expected_image_size);
+}
+
+#[tokio::test]
+async fn test_rgb_reference_from_http_stream() {
+    use std::str::FromStr as _;
+
+    let uri =
+        "https://github.com/KhronosGroup/KTX-Software/raw/master/tests/testimages/rgb-reference.ktx";
+    let mut uri = hyper::Uri::from_static(uri);
+
+    let https = hyper_tls::HttpsConnector::new();
+    let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+
+    let response = loop {
+        let response = client.get(uri.clone()).await.unwrap();
+        match response.status() {
+            hyper::StatusCode::OK => {
+                break response;
+            }
+            hyper::StatusCode::FOUND => {
+                let key = hyper::header::HeaderName::from_static("location");
+                let location = response.headers()[key].to_str().unwrap();
+                uri = hyper::Uri::from_str(location).unwrap();
+            }
+            x => panic!("Error Code: {}", x),
+        }
+    };
+
+    let content_type = hyper::header::HeaderName::from_static("content-type");
+    assert_eq!(
+        response.headers()[content_type].to_str().unwrap(),
+        "image/ktx"
+    );
+
+    let body = response.into_body();
+    let stream = body.map(|r| r.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)));
     let reader = StreamRead::new(stream);
 
     let decoder = Decoder::new(reader);
