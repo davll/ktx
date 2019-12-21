@@ -336,3 +336,112 @@ fn etc1_block_image_size(w: u32, h: u32) -> u32 {
     let bh = (h + 3) / 4;
     (8 * bw * bh)
 }
+
+pub struct StreamRead<S> {
+    stream: S,
+    buf: Vec<u8>,
+    pos: usize,
+}
+
+impl<S> StreamRead<S> {
+    pub fn new(stream: S) -> Self {
+        StreamRead {
+            stream,
+            buf: vec![],
+            pos: 0,
+        }
+    }
+}
+
+impl<S: futures_core::stream::Stream> tokio::io::AsyncRead for StreamRead<S>
+where
+    S: futures_core::stream::Stream<Item = std::io::Result<Vec<u8>>> + Unpin
+{
+    fn poll_read(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut futures_core::task::Context<'_>,
+        buf: &mut [u8],
+    ) -> futures_core::task::Poll<std::io::Result<usize>>
+    {
+        use futures_core::task::Poll;
+        use std::pin::Pin;
+        use std::cmp::min;
+
+        let this = self.get_mut();
+        let curr_buf = &mut this.buf;
+        let curr_pos = &mut this.pos;
+        let stream = Pin::new(&mut this.stream);
+
+        // Edge case
+        if buf.is_empty() {
+            return Poll::Ready(Ok(0));
+        }
+
+        // Fetch Data
+        if curr_buf.is_empty() || *curr_pos == curr_buf.len() {
+            match stream.poll_next(cx) {
+                Poll::Ready(Some(result)) => {
+                    match result {
+                        Ok(buf) => {
+                            *curr_buf = buf;
+                            *curr_pos = 0;
+                        }
+                        Err(e) => return Poll::Ready(Err(e)),
+                    }
+                }
+                Poll::Ready(None) => return Poll::Ready(Ok(0)),
+                Poll::Pending => return Poll::Pending,
+            }
+        }
+
+        let max_count = curr_buf.len() - *curr_pos;
+        let count = min(buf.len(), max_count);
+        let start = *curr_pos;
+        let end = start + count;
+        *curr_pos += count;
+        buf[0..count].copy_from_slice(&curr_buf[start..end]);
+        Poll::Ready(Ok(count))
+    }
+}
+
+#[tokio::test]
+async fn test_rgb_reference_from_stream() {
+    use tokio::io::AsyncReadExt as _;
+    use futures_util::StreamExt as _;
+
+    let path = "data/khr/rgb-reference.ktx";
+    let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
+    let mut reader = BufReader::new(file);
+
+    let mut buf = vec![];
+    reader.read_to_end(&mut buf).await.unwrap();
+
+    let stream = futures_util::stream::iter(buf.chunks(128).map(|x| Ok(Vec::from(x))));
+    let reader = StreamRead::new(stream);
+
+    let decoder = Decoder::new(reader);
+    let (info, mut stream) = decoder.read_async().await.unwrap();
+
+    //println!("info = {:?}", &info);
+    assert_eq!(info.gl_type, GL_UNSIGNED_BYTE);
+    assert_eq!(info.gl_type_size, 1);
+    assert_eq!(info.gl_format, GL_RGB);
+    assert_eq!(info.gl_internal_format, GL_RGB8);
+    assert_eq!(info.gl_base_internal_format, GL_RGB);
+    assert_eq!(info.pixel_width, 128);
+    assert_eq!(info.pixel_height, 128);
+    assert_eq!(info.pixel_depth, 0);
+    assert_eq!(info.number_of_array_elements, 0);
+    assert_eq!(info.number_of_faces, 1);
+    assert_eq!(info.number_of_mipmap_levels, 1);
+
+    let (frame, buf) = stream.next().await.map(|r| r.unwrap()).unwrap();
+    let expected_image_size = ((128 * 3 + 3) / 4) * 4 * 128;
+    assert_eq!(frame.level, 0);
+    assert_eq!(frame.layer, 0);
+    assert_eq!(frame.face, 0);
+    assert_eq!(frame.pixel_width, 128);
+    assert_eq!(frame.pixel_height, 128);
+    assert_eq!(frame.pixel_depth, 1);
+    assert_eq!(buf.len(), expected_image_size);
+}
