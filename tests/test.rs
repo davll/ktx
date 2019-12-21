@@ -308,7 +308,7 @@ lazy_static! {
     static ref PROJECT_DIR: std::path::PathBuf = {
         use std::env::var_os;
         var_os("CARGO_MANIFEST_DIR")
-            .map(|s| std::path::PathBuf::from(s))
+            .map(std::path::PathBuf::from)
             .unwrap()
     };
 }
