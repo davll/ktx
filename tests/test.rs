@@ -1,11 +1,10 @@
-extern crate futures_util;
 extern crate ktx_async as ktx;
-extern crate lazy_static;
-extern crate tokio;
 
+use futures_core::stream::Stream;
 use futures_util::stream::StreamExt as _;
 use ktx::Decoder;
 use lazy_static::lazy_static;
+use tokio;
 use tokio::fs::File;
 use tokio::io::BufReader;
 
@@ -353,19 +352,18 @@ impl<S> StreamRead<S> {
     }
 }
 
-impl<S: futures_core::stream::Stream> tokio::io::AsyncRead for StreamRead<S>
+impl<S> tokio::io::AsyncRead for StreamRead<S>
 where
-    S: futures_core::stream::Stream<Item = std::io::Result<Vec<u8>>> + Unpin
+    S: Stream<Item = std::io::Result<Vec<u8>>> + Unpin,
 {
     fn poll_read(
         self: std::pin::Pin<&mut Self>,
         cx: &mut futures_core::task::Context<'_>,
         buf: &mut [u8],
-    ) -> futures_core::task::Poll<std::io::Result<usize>>
-    {
+    ) -> futures_core::task::Poll<std::io::Result<usize>> {
         use futures_core::task::Poll;
-        use std::pin::Pin;
         use std::cmp::min;
+        use std::pin::Pin;
 
         let this = self.get_mut();
         let curr_buf = &mut this.buf;
@@ -380,15 +378,13 @@ where
         // Fetch Data
         if curr_buf.is_empty() || *curr_pos == curr_buf.len() {
             match stream.poll_next(cx) {
-                Poll::Ready(Some(result)) => {
-                    match result {
-                        Ok(buf) => {
-                            *curr_buf = buf;
-                            *curr_pos = 0;
-                        }
-                        Err(e) => return Poll::Ready(Err(e)),
+                Poll::Ready(Some(result)) => match result {
+                    Ok(buf) => {
+                        *curr_buf = buf;
+                        *curr_pos = 0;
                     }
-                }
+                    Err(e) => return Poll::Ready(Err(e)),
+                },
                 Poll::Ready(None) => return Poll::Ready(Ok(0)),
                 Poll::Pending => return Poll::Pending,
             }
@@ -406,8 +402,8 @@ where
 
 #[tokio::test]
 async fn test_rgb_reference_from_stream() {
-    use tokio::io::AsyncReadExt as _;
     use futures_util::StreamExt as _;
+    use tokio::io::AsyncReadExt as _;
 
     let path = "data/khr/rgb-reference.ktx";
     let file = File::open(PROJECT_DIR.join(path)).await.unwrap();
